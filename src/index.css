@@ -1,0 +1,191 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-navy-950 text-slate-200 font-sans antialiased;
+    background-image: 
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: -1px -1px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-navy-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-navy-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-navy-600;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-navy-900 border border-navy-700 rounded-xl p-5;
+  }
+
+  .card-glass {
+    @apply bg-navy-900/80 backdrop-blur-sm border border-navy-700/60 rounded-xl;
+  }
+
+  .badge-role {
+    @apply text-xs font-semibold px-2.5 py-0.5 rounded-full border uppercase tracking-wide;
+  }
+
+  .btn-primary {
+    @apply bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-navy-950 font-semibold px-4 py-2 rounded-lg transition-colors duration-150 text-sm;
+  }
+
+  .btn-secondary {
+    @apply bg-navy-800 hover:bg-navy-700 active:bg-navy-600 text-slate-200 border border-navy-600 font-medium px-4 py-2 rounded-lg transition-colors duration-150 text-sm;
+  }
+
+  .btn-ghost {
+    @apply text-slate-400 hover:text-slate-200 hover:bg-navy-800 px-3 py-2 rounded-lg transition-colors duration-150 text-sm;
+  }
+
+  .btn-danger {
+    @apply bg-red-900/50 hover:bg-red-900 text-red-300 border border-red-800 font-medium px-4 py-2 rounded-lg transition-colors duration-150 text-sm;
+  }
+
+  .input-field {
+    @apply bg-navy-800 border border-navy-600 text-slate-200 placeholder-slate-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors w-full;
+  }
+
+  .tag-verified {
+    @apply inline-flex items-center gap-1 text-xs bg-emerald-900/40 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded-full;
+  }
+
+  .tag-hypothesis {
+    @apply inline-flex items-center gap-1 text-xs bg-amber-900/40 text-amber-400 border border-amber-800/60 px-2 py-0.5 rounded-full;
+  }
+
+  .tag-uncertain {
+    @apply inline-flex items-center gap-1 text-xs bg-yellow-900/40 text-yellow-400 border border-yellow-800/60 px-2 py-0.5 rounded-full;
+  }
+
+  .tag-rejected {
+    @apply inline-flex items-center gap-1 text-xs bg-red-900/40 text-red-400 border border-red-800/60 px-2 py-0.5 rounded-full;
+  }
+
+  .tag-unverified {
+    @apply inline-flex items-center gap-1 text-xs bg-slate-800/60 text-slate-400 border border-slate-700/60 px-2 py-0.5 rounded-full;
+  }
+
+  .confidence-bar {
+    @apply h-1.5 rounded-full bg-navy-700;
+  }
+
+  .table-row {
+    @apply border-b border-navy-800 hover:bg-navy-800/50 transition-colors;
+  }
+
+  .table-head {
+    @apply text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 text-left;
+  }
+
+  .table-cell {
+    @apply px-4 py-3 text-sm text-slate-300;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer;
+  }
+
+  .nav-item-active {
+    @apply bg-amber-500/15 text-amber-400 border border-amber-500/20;
+  }
+
+  .nav-item-inactive {
+    @apply text-slate-400 hover:text-slate-200 hover:bg-navy-800;
+  }
+
+  .stat-card {
+    @apply card flex flex-col gap-1;
+  }
+
+  .disclaimer-banner {
+    @apply bg-amber-950/40 border-b border-amber-800/30 text-amber-300/80 text-xs px-4 py-1.5 text-center;
+  }
+
+  .section-header {
+    @apply text-lg font-semibold text-slate-100 flex items-center gap-2;
+  }
+
+  .label-text {
+    @apply text-xs font-medium text-slate-500 uppercase tracking-wider;
+  }
+
+  /* Cytoscape graph container */
+  .cy-container {
+    @apply w-full h-full rounded-xl overflow-hidden bg-navy-950;
+  }
+
+  /* Leaflet map container */
+  .leaflet-container {
+    @apply rounded-xl;
+    background: #0b1120 !important;
+  }
+}
+
+@layer utilities {
+  .text-gradient-amber {
+    @apply bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent;
+  }
+
+  .glow-amber {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+  }
+
+  .border-glow-amber {
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.3);
+  }
+
+  .animate-pulse-subtle {
+    animation: pulse-subtle 3s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Leaflet dark theme overrides */
+.leaflet-tile-pane {
+  filter: brightness(0.4) hue-rotate(180deg) saturate(0.8);
+}
+
+.leaflet-control-zoom a {
+  background-color: #131f33 !important;
+  color: #94a3b8 !important;
+  border-color: #1e2d4d !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(11,17,32,0.8) !important;
+  color: #475569 !important;
+  font-size: 10px !important;
+}
+
+/* ECharts dark theme */
+.echarts-tooltip {
+  background: #0f1829 !important;
+  border-color: #1e2d4d !important;
+  color: #e2e8f0 !important;
+}
