@@ -1,7 +1,9 @@
 # Rakshak — Integrated Criminal Network Analysis System
 > Smart India Hackathon 2024 · Law Enforcement Intelligence Portal
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Netlify-00C7B7?style=flat&logo=netlify)](https://rakshak-sih.netlify.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-2ea44f?style=for-the-badge&logo=github)](https://sikto-05.github.io/rakshak-portal/)
+
+🔗 **Universal Live Link:** [https://sikto-05.github.io/rakshak-portal/](https://sikto-05.github.io/rakshak-portal/)
 
 ---
 
