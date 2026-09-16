@@ -168,7 +168,8 @@
 
 /* Leaflet dark theme overrides */
 .leaflet-tile-pane {
-  filter: brightness(0.4) hue-rotate(180deg) saturate(0.8);
+  /* CARTO dark_all tiles — no filter needed */
+  filter: none;
 }
 
 .leaflet-control-zoom a {
@@ -187,5 +188,33 @@
 .echarts-tooltip {
   background: #0f1829 !important;
   border-color: #1e2d4d !important;
+  color: #e2e8f0 !important;
+}
+
+/* Leaflet popup dark theme */
+.leaflet-popup-content-wrapper {
+  background: #0f1829 !important;
+  border: 1px solid #1e2d4d !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+
+.leaflet-popup-tip {
+  background: #1e2d4d !important;
+}
+
+.leaflet-popup-close-button {
+  color: #64748b !important;
+  font-size: 18px !important;
+  top: 6px !important;
+  right: 8px !important;
+}
+
+.leaflet-popup-close-button:hover {
   color: #e2e8f0 !important;
 }

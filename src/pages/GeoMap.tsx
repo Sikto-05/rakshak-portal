@@ -1,7 +1,34 @@
-import { useState } from 'react';
-import { MapPin, Filter, Layers, Clock } from 'lucide-react';
-import { LOCATIONS, PERSONS, RELATIONSHIPS } from '../data/syntheticData';
+import { useState, useEffect } from 'react';
+import { MapPin, Layers, Info } from 'lucide-react';
+import { LOCATIONS, PERSONS } from '../data/syntheticData';
 import { clsx } from 'clsx';
+
+// Leaflet imports — dynamic to avoid SSR issues
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix Leaflet default icon path broken by Vite bundling
+delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+// Custom marker icons by type
+function makeIcon(color: string) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width: 12px; height: 12px; border-radius: 50%;
+      background: ${color}; border: 2px solid rgba(255,255,255,0.8);
+      box-shadow: 0 0 8px ${color}80, 0 0 0 3px ${color}30;
+    "></div>`,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
+  });
+}
 
 const LOCATION_COLORS: Record<string, string> = {
   'hideout': '#ef4444',
@@ -16,6 +43,26 @@ const INDIA_STATES = [
   'Karnataka', 'Haryana', 'Telangana', 'Madhya Pradesh',
 ];
 
+function MapThemeLayer() {
+  return (
+    <TileLayer
+      attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
+      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      subdomains="abcd"
+      maxZoom={19}
+    />
+  );
+}
+
+// Fly to India on load
+function FlyToIndia() {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo([20.5937, 78.9629], 5, { duration: 1.5 });
+  }, [map]);
+  return null;
+}
+
 export default function GeoMap() {
   const [stateFilter, setStateFilter] = useState('All States');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -28,32 +75,50 @@ export default function GeoMap() {
     return true;
   });
 
-  // Find persons at each location
   const personsAtLocation = (locId: string) =>
     PERSONS.filter(p => p.locationId === locId);
 
-  // Build movement pairs (entities that appear at multiple locations)
-  const movements = RELATIONSHIPS
-    .filter(r => r.type === 'PRESENT_AT' || r.type === 'RESIDES_AT')
-    .slice(0, 6);
+  // Movement polylines between persons and their visited locations
+  const movementLines: Array<[[number, number], [number, number]]> = [];
+  if (showMovements) {
+    LOCATIONS.forEach(from => {
+      LOCATIONS.forEach(to => {
+        if (from.id !== to.id) {
+          const fromPersons = personsAtLocation(from.id);
+          const toPersons = personsAtLocation(to.id);
+          const sharedPersons = fromPersons.filter(p =>
+            toPersons.some(tp => tp.id === p.id) ||
+            (p.caseIds || []).length > 1
+          );
+          if (sharedPersons.length > 0 && movementLines.length < 6) {
+            movementLines.push([
+              [from.attributes.lat, from.attributes.lng],
+              [to.attributes.lat, to.attributes.lng],
+            ]);
+          }
+        }
+      });
+    });
+  }
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="space-y-4 max-w-7xl mx-auto h-[calc(100vh-130px)] flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3 shrink-0">
         <div>
           <h2 className="text-xl font-semibold text-white">Geo Intelligence Map</h2>
           <p className="text-sm text-slate-500 mt-0.5">
-            India-specific geography · Country → State → District → Police Station
+            Live OpenStreetMap · India operations · State → District → Police Station
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-950/30 border border-amber-800/30 px-3 py-1.5 rounded-full">
           <MapPin className="w-3.5 h-3.5" />
-          {filteredLocs.length} locations visible
+          {filteredLocs.length} locations active
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2 shrink-0">
         <select value={stateFilter} onChange={e => setStateFilter(e.target.value)} className="input-field w-auto text-xs">
           {INDIA_STATES.map(s => <option key={s}>{s}</option>)}
         </select>
@@ -67,110 +132,89 @@ export default function GeoMap() {
           onClick={() => setShowMovements(m => !m)}
           className={clsx('btn-secondary text-xs flex items-center gap-1.5', showMovements && 'border-amber-500/30 text-amber-400')}
         >
-          <Layers className="w-3.5 h-3.5" /> Movement Lines
+          <Layers className="w-3.5 h-3.5" /> Movement Vectors
         </button>
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-navy-900 border border-navy-700 rounded-lg px-3 py-2">
+          <Info className="w-3.5 h-3.5 text-blue-400" />
+          Click any pin to view details
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Map placeholder / SVG India map */}
-        <div className="lg:col-span-2 card p-0 overflow-hidden relative" style={{ minHeight: '520px' }}>
-          {/* Dark India map SVG background */}
-          <div className="absolute inset-0 bg-navy-950 flex items-center justify-center overflow-hidden">
-            {/* Simple India map approximation using SVG */}
-            <svg viewBox="0 0 400 460" className="w-full h-full opacity-20" fill="none">
-              <path d="M160,30 L200,20 L240,35 L270,60 L280,100 L300,130 L310,160 L320,200 L330,230 L310,260 L290,290 L270,310 L250,340 L230,370 L210,400 L195,430 L180,400 L160,370 L140,340 L120,310 L100,280 L80,250 L70,220 L80,190 L90,160 L110,130 L120,100 L130,70 Z" stroke="#334155" strokeWidth="1.5" fill="#0f1829"/>
-              <path d="M240,35 L270,30 L290,50 L300,80 L310,100 L300,130" stroke="#334155" strokeWidth="1"/>
-              <path d="M80,250 L60,240 L50,220 L60,200 L70,220" stroke="#334155" strokeWidth="1"/>
-            </svg>
-
-            {/* Location pins */}
-            {filteredLocs.map(loc => {
-              // Map lat/lng to SVG coordinates (approximate India bounds)
-              const x = ((loc.attributes.lng - 68) / (98 - 68)) * 360 + 20;
-              const y = ((37 - loc.attributes.lat) / (37 - 8)) * 420 + 20;
-              const color = LOCATION_COLORS[loc.attributes.locationType || 'residence'] || '#64748b';
-              const isSelected = selectedLoc?.id === loc.id;
-
-              return (
-                <g key={loc.id} onClick={() => setSelectedLoc(loc)} className="cursor-pointer" transform={`translate(${x}, ${y})`}>
-                  <circle r={isSelected ? 12 : 8} fill={color} opacity={0.9} stroke={isSelected ? '#f59e0b' : 'rgba(255,255,255,0.3)'} strokeWidth={isSelected ? 2 : 1} />
-                  <circle r={isSelected ? 5 : 3} fill="white" opacity={0.9} />
-                  {isSelected && <circle r={18} fill="transparent" stroke={color} strokeWidth="1.5" opacity={0.5} />}
-                </g>
-              );
-            })}
+      {/* Map + Sidebar layout */}
+      <div className="flex-1 flex gap-4 min-h-0">
+        {/* Map */}
+        <div className="flex-1 rounded-xl overflow-hidden border border-navy-700 relative">
+          <MapContainer
+            center={[20.5937, 78.9629]}
+            zoom={5}
+            style={{ width: '100%', height: '100%' }}
+            className="z-0"
+          >
+            <MapThemeLayer />
+            <FlyToIndia />
 
             {/* Movement lines */}
-            {showMovements && movements.slice(0, 4).map((rel, i) => {
-              const srcPerson = PERSONS.find(p => p.id === rel.sourceId);
-              const tgtLoc = LOCATIONS.find(l => l.id === rel.targetId);
-              const srcLoc = srcPerson?.locationId ? LOCATIONS.find(l => l.id === srcPerson.locationId) : null;
-              if (!srcLoc || !tgtLoc) return null;
+            {movementLines.map((line, i) => (
+              <Polyline
+                key={i}
+                positions={line}
+                pathOptions={{
+                  color: '#f59e0b',
+                  weight: 1.5,
+                  opacity: 0.6,
+                  dashArray: '6 4',
+                }}
+              />
+            ))}
 
-              const x1 = ((srcLoc.attributes.lng - 68) / 30) * 360 + 20;
-              const y1 = ((37 - srcLoc.attributes.lat) / 29) * 420 + 20;
-              const x2 = ((tgtLoc.attributes.lng - 68) / 30) * 360 + 20;
-              const y2 = ((37 - tgtLoc.attributes.lat) / 29) * 420 + 20;
-
+            {/* Location markers */}
+            {filteredLocs.map(loc => {
+              const color = LOCATION_COLORS[loc.attributes.locationType || 'residence'] || '#64748b';
+              const persons = personsAtLocation(loc.id);
               return (
-                <line key={rel.id} x1={x1} y1={y1} x2={x2} y2={y2}
-                  stroke="#f59e0b" strokeWidth="1" strokeDasharray="4 3" opacity={0.5} />
+                <Marker
+                  key={loc.id}
+                  position={[loc.attributes.lat, loc.attributes.lng]}
+                  icon={makeIcon(color)}
+                  eventHandlers={{ click: () => setSelectedLoc(loc) }}
+                >
+                  <Popup className="rakshak-popup">
+                    <div className="bg-navy-900 text-slate-200 rounded-lg p-3 min-w-[220px] text-xs" style={{ backgroundColor: '#0f1829', border: '1px solid #1e2d4d', borderRadius: 8 }}>
+                      <div className="font-semibold text-sm text-slate-100 mb-1">{loc.label}</div>
+                      <div className="text-slate-400 mb-2">
+                        {loc.attributes.district} · {loc.attributes.state}
+                      </div>
+                      {loc.attributes.policeStation && (
+                        <div className="text-slate-500 mb-2">PS: {loc.attributes.policeStation}</div>
+                      )}
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold" style={{ color, backgroundColor: color + '20', border: `1px solid ${color}50` }}>
+                          {loc.attributes.locationType?.replace('-', ' ')}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-600 font-mono">
+                        {loc.attributes.lat.toFixed(4)}, {loc.attributes.lng.toFixed(4)}
+                      </div>
+                      {persons.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-slate-700">
+                          <div className="text-[10px] text-slate-500 mb-1">Linked persons:</div>
+                          {persons.slice(0, 3).map(p => (
+                            <div key={p.id} className="text-[11px] text-blue-300">{p.label}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
               );
             })}
-          </div>
-
-          {/* Location tooltip */}
-          {selectedLoc && (
-            <div className="absolute bottom-4 left-4 right-4 card-glass border border-navy-600 p-4 z-10">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="font-semibold text-slate-100 text-sm">{selectedLoc.label}</div>
-                  <div className="text-xs text-slate-400 mt-1">
-                    {selectedLoc.attributes.district} · {selectedLoc.attributes.state}
-                  </div>
-                  {selectedLoc.attributes.policeStation && (
-                    <div className="text-[10px] text-slate-500 mt-0.5">PS: {selectedLoc.attributes.policeStation}</div>
-                  )}
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[10px] px-2 py-0.5 rounded-full border" style={{
-                      color: LOCATION_COLORS[selectedLoc.attributes.locationType || ''] || '#64748b',
-                      borderColor: LOCATION_COLORS[selectedLoc.attributes.locationType || ''] || '#64748b',
-                      backgroundColor: (LOCATION_COLORS[selectedLoc.attributes.locationType || ''] || '#64748b') + '20',
-                    }}>
-                      {selectedLoc.attributes.locationType?.replace('-', ' ')}
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-mono">
-                      {selectedLoc.attributes.lat.toFixed(4)}, {selectedLoc.attributes.lng.toFixed(4)}
-                    </span>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedLoc(null)} className="text-slate-500 hover:text-slate-300 ml-4">✕</button>
-              </div>
-              {personsAtLocation(selectedLoc.id).length > 0 && (
-                <div className="mt-3 pt-3 border-t border-navy-700">
-                  <div className="text-[10px] text-slate-500 mb-1.5">Persons linked to this location:</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {personsAtLocation(selectedLoc.id).map(p => (
-                      <span key={p.id} className="text-[10px] bg-blue-900/30 border border-blue-800/50 text-blue-300 px-2 py-0.5 rounded-full">
-                        {p.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Map overlay title */}
-          <div className="absolute top-3 left-3 bg-navy-900/80 border border-navy-700 rounded-lg px-3 py-1.5 text-xs text-slate-400">
-            India · Criminal Network Geo-Intelligence
-          </div>
+          </MapContainer>
         </div>
 
-        {/* Location list */}
-        <div className="space-y-3">
-          <div className="label-text">Location Directory ({filteredLocs.length})</div>
-          <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+        {/* Location list sidebar */}
+        <div className="w-64 shrink-0 flex flex-col gap-3 overflow-hidden">
+          <div className="label-text">Directory ({filteredLocs.length})</div>
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1">
             {filteredLocs.map(loc => {
               const persons = personsAtLocation(loc.id);
               const color = LOCATION_COLORS[loc.attributes.locationType || ''] || '#64748b';
@@ -195,7 +239,7 @@ export default function GeoMap() {
                           {loc.attributes.locationType?.replace('-', ' ')}
                         </span>
                         {persons.length > 0 && (
-                          <span className="text-[9px] text-slate-500">{persons.length} person{persons.length !== 1 ? 's' : ''}</span>
+                          <span className="text-[9px] text-slate-600">{persons.length} person{persons.length !== 1 ? 's' : ''}</span>
                         )}
                       </div>
                     </div>
@@ -206,46 +250,41 @@ export default function GeoMap() {
           </div>
 
           {/* Legend */}
-          <div className="card mt-2">
+          <div className="card shrink-0">
             <div className="label-text mb-2">Location Types</div>
             <div className="space-y-1.5">
               {Object.entries(LOCATION_COLORS).map(([type, color]) => (
                 <div key={type} className="flex items-center gap-2 text-[10px] text-slate-400">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                   <span className="capitalize">{type.replace('-', ' ')}</span>
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* State drilldown */}
-          <div className="card">
-            <div className="label-text mb-2">Hierarchy Drilldown</div>
-            <div className="text-[10px] text-slate-500 space-y-1">
-              <div className="flex items-center gap-1.5">
-                <span className="text-slate-400">🇮🇳</span>
-                <span className="text-slate-300 font-medium">India</span>
-              </div>
-              <div className="flex items-center gap-1.5 pl-4">
-                <span>↳</span>
-                <span className={stateFilter === 'All States' ? 'text-amber-400' : 'text-slate-400'}>{stateFilter === 'All States' ? '8 states active' : stateFilter}</span>
-              </div>
-              {selectedLoc && (
-                <>
-                  <div className="flex items-center gap-1.5 pl-8">
-                    <span>↳</span>
-                    <span className="text-slate-300">{selectedLoc.attributes.district}</span>
-                  </div>
-                  {selectedLoc.attributes.policeStation && (
-                    <div className="flex items-center gap-1.5 pl-12">
-                      <span>↳</span>
-                      <span className="text-amber-400">{selectedLoc.attributes.policeStation}</span>
-                    </div>
-                  )}
-                </>
+              {showMovements && (
+                <div className="flex items-center gap-2 text-[10px] text-slate-400 pt-1 border-t border-navy-700 mt-1">
+                  <span className="w-6 border-t border-dashed border-amber-500 opacity-70" />
+                  <span>Movement vector</span>
+                </div>
               )}
             </div>
           </div>
+
+          {/* Hierarchy drilldown */}
+          {selectedLoc && (
+            <div className="card shrink-0 bg-amber-950/10 border-amber-800/20">
+              <div className="label-text mb-2">Location Hierarchy</div>
+              <div className="text-[10px] text-slate-400 space-y-1">
+                <div className="flex items-center gap-1.5"><span className="text-slate-500">🇮🇳</span><span className="font-semibold text-slate-300">India</span></div>
+                <div className="flex items-center gap-1.5 pl-4"><span>↳</span><span>{selectedLoc.attributes.state}</span></div>
+                <div className="flex items-center gap-1.5 pl-8"><span>↳</span><span>{selectedLoc.attributes.district}</span></div>
+                {selectedLoc.attributes.policeStation && (
+                  <div className="flex items-center gap-1.5 pl-12"><span>↳</span><span className="text-amber-400">{selectedLoc.attributes.policeStation}</span></div>
+                )}
+              </div>
+              <div className="mt-2 text-[10px] font-mono text-slate-600">
+                {selectedLoc.attributes.lat.toFixed(4)}° N, {selectedLoc.attributes.lng.toFixed(4)}° E
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

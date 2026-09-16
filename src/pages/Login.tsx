@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { DEMO_CREDENTIALS } from '../config/roles';
-import { Shield, Lock, User, Eye, EyeOff, AlertCircle, ChevronRight } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, AlertCircle, ChevronRight } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -18,7 +18,7 @@ export default function Login() {
     setLoading(true);
     await new Promise(r => setTimeout(r, 800));
     const result = login(username, password);
-    if (!result.success) setError(result.error || 'Login failed');
+    if (!result.success) setError(result.error || 'Authentication failed. Check credentials.');
     setLoading(false);
   };
 
@@ -28,86 +28,101 @@ export default function Login() {
     setError('');
   };
 
-  const labels = {
-    en: { title: 'Rakshak', sub: 'Integrated Criminal Network Analysis System', badge: 'Badge / Username', pass: 'Password', btn: 'Secure Sign In', demo: 'Demo Accounts', disclaimer: 'DISCLAIMER: This system contains synthetic, de-identified data only. Not connected to live CCTNS / ICJS. Authorised access only. All sessions are logged and audited.' },
-    hi: { title: 'रक्षक', sub: 'एकीकृत आपराधिक नेटवर्क विश्लेषण प्रणाली', badge: 'बैज / उपयोगकर्ता नाम', pass: 'पासवर्ड', btn: 'सुरक्षित साइन इन', demo: 'डेमो खाते', disclaimer: 'अस्वीकरण: इस प्रणाली में केवल सिंथेटिक, डी-आइडेंटिफाइड डेटा है। CCTNS/ICJS से जुड़ा नहीं। केवल अधिकृत पहुँच।' },
-  };
-  const L = labels[lang];
-
   return (
     <div className="min-h-screen bg-navy-950 flex flex-col">
-      {/* Top bar */}
-      <div className="disclaimer-banner flex items-center justify-between">
-        <span>⚠ {L.disclaimer}</span>
-        <button onClick={() => setLang(l => l === 'en' ? 'hi' : 'en')} className="ml-4 text-amber-400 hover:text-amber-300 font-semibold shrink-0">
+      {/* Top disclaimer bar */}
+      <div className="disclaimer-banner flex items-center justify-between px-6">
+        <span className="flex items-center gap-2">
+          <span className="text-amber-500">⚠</span>
+          {lang === 'en'
+            ? 'RESTRICTED ACCESS — Authorised Law Enforcement Personnel Only. All sessions are logged and audited.'
+            : 'प्रतिबंधित पहुँच — केवल अधिकृत कानून प्रवर्तन कर्मियों के लिए। सभी सत्र लॉग किए जाते हैं।'}
+        </span>
+        <button onClick={() => setLang(l => l === 'en' ? 'hi' : 'en')}
+          className="ml-4 text-amber-400 hover:text-amber-300 font-semibold text-xs shrink-0 border border-amber-800/40 rounded px-2 py-0.5">
           {lang === 'en' ? 'हिंदी' : 'English'}
         </button>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-4xl flex gap-8 items-start">
+      <div className="flex-1 flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-5xl flex gap-12 items-center">
 
-          {/* Left — branding */}
-          <div className="hidden lg:flex flex-col gap-6 flex-1 pt-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
-                <Shield className="w-8 h-8 text-amber-400" />
+          {/* Left — branding panel */}
+          <div className="hidden lg:flex flex-col gap-8 flex-1">
+            {/* Logo + title */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative">
+                <img
+                  src="/rakshak-portal/rakshak-badge.jpg"
+                  alt="Rakshak Badge"
+                  className="w-36 h-auto drop-shadow-2xl"
+                  style={{ filter: 'drop-shadow(0 0 24px rgba(245,158,11,0.25))' }}
+                />
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-white">{L.title}</h1>
-                <p className="text-slate-400 text-sm leading-tight mt-0.5">{L.sub}</p>
+              <div className="text-center">
+                <h1 className="text-4xl font-black tracking-[0.15em] text-white uppercase" style={{ letterSpacing: '0.2em' }}>
+                  RAKSHAK
+                </h1>
+                <div className="w-24 h-0.5 bg-amber-500/60 mx-auto mt-2 mb-2" />
+                <p className="text-slate-400 text-sm tracking-widest uppercase">
+                  {lang === 'en' ? 'Integrated Criminal Network Analysis System' : 'एकीकृत आपराधिक नेटवर्क विश्लेषण प्रणाली'}
+                </p>
               </div>
             </div>
 
-            <div className="space-y-4 mt-2">
+            {/* System stats */}
+            <div className="grid grid-cols-2 gap-3">
               {[
-                { icon: '🔍', title: 'Entity Resolution', desc: 'Recognizes aliases and name variants as the same person using NLP.' },
-                { icon: '🕸️', title: 'Knowledge Graph', desc: 'Every connection backed by evidence — no bare links, ever.' },
-                { icon: '📍', title: 'Geo Intelligence', desc: 'India-specific geography: State → District → Police Station.' },
-                { icon: '🤖', title: 'Investigator Copilot', desc: 'Ask questions in plain English or Hindi. Get evidence-backed answers.' },
-              ].map(f => (
-                <div key={f.title} className="flex gap-3 p-3 rounded-xl bg-navy-900/60 border border-navy-700/40">
-                  <span className="text-xl">{f.icon}</span>
-                  <div>
-                    <div className="text-sm font-semibold text-slate-200">{f.title}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">{f.desc}</div>
-                  </div>
+                { label: 'Active Cases', value: '5', unit: 'FIRs' },
+                { label: 'Entities Indexed', value: '50+', unit: 'records' },
+                { label: 'Network Links', value: '24', unit: 'relationships' },
+                { label: 'Intelligence Score', value: '0.874', unit: 'precision' },
+              ].map(s => (
+                <div key={s.label} className="bg-navy-900/60 border border-navy-700/40 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-amber-400">{s.value}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">{s.unit}</div>
+                  <div className="text-[10px] text-slate-600 mt-1 uppercase tracking-wider">{s.label}</div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-2 p-4 rounded-xl bg-amber-950/30 border border-amber-800/30">
-              <p className="text-xs text-amber-400/80 leading-relaxed">
-                <strong className="text-amber-400">Smart India Hackathon 2024</strong><br />
-                All data is synthetic and de-identified. No real criminal records or personal information. Ground truth labels available for evaluation.
+            {/* Footer notice */}
+            <div className="p-3 rounded-xl bg-navy-900/40 border border-navy-800/50">
+              <p className="text-[10px] text-slate-600 leading-relaxed text-center">
+                Synthetic / de-identified data only. Not connected to live CCTNS, ICJS, NAFIS or any government database.
               </p>
             </div>
           </div>
 
+          {/* Divider */}
+          <div className="hidden lg:block w-px h-80 bg-navy-700/50" />
+
           {/* Right — login form */}
           <div className="w-full max-w-sm">
             {/* Mobile logo */}
-            <div className="lg:hidden flex items-center gap-3 mb-6">
-              <Shield className="w-8 h-8 text-amber-400" />
-              <div>
-                <div className="text-xl font-bold text-white">{L.title}</div>
-                <div className="text-xs text-slate-400">{L.sub}</div>
+            <div className="lg:hidden flex flex-col items-center gap-3 mb-8">
+              <img src="/rakshak-portal/rakshak-badge.jpg" alt="Rakshak" className="w-20 h-auto" />
+              <div className="text-center">
+                <div className="text-2xl font-black tracking-widest text-white uppercase">RAKSHAK</div>
+                <div className="text-xs text-slate-400 mt-0.5">Integrated Criminal Network Analysis System</div>
               </div>
             </div>
 
-            <div className="card-glass p-8 rounded-2xl">
+            <div className="card-glass p-8 rounded-2xl shadow-2xl">
               <div className="mb-6">
-                <div className="flex items-center gap-2 mb-1">
-                  <Lock className="w-4 h-4 text-amber-400" />
-                  <span className="text-xs font-semibold text-amber-400 uppercase tracking-widest">Secure Access Portal</span>
+                <div className="flex items-center gap-2 mb-2">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-[10px] font-bold text-amber-400 uppercase tracking-[0.2em]">Secure Access</span>
                 </div>
-                <h2 className="text-xl font-semibold text-slate-100">Officer Sign In</h2>
-                <p className="text-xs text-slate-500 mt-1">Use your badge credentials to access the system</p>
+                <h2 className="text-lg font-bold text-slate-100">Officer Sign In</h2>
+                <p className="text-xs text-slate-500 mt-1">Enter your issued badge credentials to proceed</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="label-text block mb-1.5">{L.badge}</label>
+                  <label className="label-text block mb-1.5">
+                    {lang === 'en' ? 'Badge / Username' : 'बैज / उपयोगकर्ता नाम'}
+                  </label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <input
@@ -123,50 +138,55 @@ export default function Login() {
                 </div>
 
                 <div>
-                  <label className="label-text block mb-1.5">{L.pass}</label>
+                  <label className="label-text block mb-1.5">
+                    {lang === 'en' ? 'Password' : 'पासवर्ड'}
+                  </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <input
                       type={showPass ? 'text' : 'password'}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      className="input-field pl-9 pr-9"
+                      className="input-field pl-9 pr-10"
                       placeholder="Enter password"
                       required
                       autoComplete="current-password"
                     />
                     <button type="button" onClick={() => setShowPass(s => !s)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
                 {error && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-red-950/50 border border-red-900/50 text-red-400 text-sm">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-red-950/50 border border-red-800/50 text-red-400 text-sm">
                     <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                     <span>{error}</span>
                   </div>
                 )}
 
-                <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-2.5">
+                <button type="submit" disabled={loading}
+                  className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 mt-2">
                   {loading ? (
                     <span className="flex items-center gap-2">
                       <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                       </svg>
-                      Authenticating...
+                      Authenticating…
                     </span>
                   ) : (
-                    <><Lock className="w-4 h-4" /> {L.btn}</>
+                    <><Lock className="w-4 h-4" /> {lang === 'en' ? 'Secure Sign In' : 'सुरक्षित साइन इन'}</>
                   )}
                 </button>
               </form>
 
-              {/* Demo credentials */}
+              {/* Demo accounts */}
               <div className="mt-6 pt-5 border-t border-navy-700">
-                <p className="label-text text-center mb-3">{L.demo} (click to fill)</p>
+                <p className="label-text text-center mb-3">
+                  {lang === 'en' ? 'Demo Accounts — click to fill' : 'डेमो खाते — क्लिक करें'}
+                </p>
                 <div className="space-y-1.5">
                   {DEMO_CREDENTIALS.map(c => (
                     <button
@@ -176,10 +196,10 @@ export default function Login() {
                     >
                       <div>
                         <span className="text-xs font-mono text-amber-400">{c.username}</span>
-                        <span className="text-xs text-slate-500 ml-2">{c.name.split(' ').slice(0, 2).join(' ')}</span>
+                        <span className="text-[10px] text-slate-500 ml-2">{c.name.split(' ').slice(0, 2).join(' ')}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`badge-role text-[10px] ${
+                        <span className={`badge-role text-[9px] ${
                           c.role === 'investigator' ? 'bg-blue-900/50 text-blue-400 border-blue-800' :
                           c.role === 'sr_investigator' ? 'bg-indigo-900/50 text-indigo-400 border-indigo-800' :
                           c.role === 'supervisor' ? 'bg-purple-900/50 text-purple-400 border-purple-800' :
@@ -191,7 +211,9 @@ export default function Login() {
                     </button>
                   ))}
                 </div>
-                <p className="text-center text-xs text-slate-600 mt-3">Password for all: <span className="font-mono text-slate-500">rakshak@2024</span></p>
+                <p className="text-center text-[10px] text-slate-600 mt-3">
+                  All accounts — password: <span className="font-mono text-slate-500">rakshak@2024</span>
+                </p>
               </div>
             </div>
           </div>
