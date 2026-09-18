@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "dev",
+      "problemMatcher": [],
+      "label": "Rakshak: Start Development Server",
+      "detail": "Runs 'npm run dev' to start Vite local dev server",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "isBackground": true
+    },
+    {
+      "type": "npm",
+      "script": "build",
+      "problemMatcher": [],
+      "label": "Rakshak: Build Production Bundle",
+      "detail": "Runs 'npm run build' to bundle the project into dist/"
+    },
+    {
+      "type": "npm",
+      "script": "preview",
+      "problemMatcher": [],
+      "label": "Rakshak: Preview Production Build",
+      "detail": "Runs 'npm run preview' to test the production bundle locally"
+    }
+  ]
+}
